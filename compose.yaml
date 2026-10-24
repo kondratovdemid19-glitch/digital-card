@@ -1,0 +1,46 @@
+name: demid-card
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: card
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-card_local_only}
+      POSTGRES_DB: card
+    ports:
+      - "127.0.0.1:${DB_PORT:-55439}:5432"
+    volumes:
+      - card-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U card -d card"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+  app:
+    build: .
+    environment:
+      DB_HOST: db
+      DB_USER: card
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-card_local_only}
+      DB_NAME: card
+      NODE_ENV: production
+      PORT: 3000
+    ports:
+      - "127.0.0.1:${PORT:-3000}:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+volumes:
+  card-data:

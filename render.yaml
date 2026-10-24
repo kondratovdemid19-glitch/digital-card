@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: demid-digital-card
+    runtime: docker
+    plan: free
+    region: frankfurt
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: demid-card-db
+          property: connectionString
+
+databases:
+  - name: demid-card-db
+    plan: free
+    region: frankfurt
+    postgresMajorVersion: "17"
+    databaseName: card
+    user: card
+    ipAllowList: []
